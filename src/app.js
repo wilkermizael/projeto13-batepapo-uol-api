@@ -25,7 +25,7 @@ const db = mongoClient.db()
 // Rotas
 app.post('/participants', async (req, res) =>{
     const {name} = req.body
-    const schemaName = Joi.object({name: Joi.string()})
+    const schemaName = Joi.object({name: Joi.string().hostname().required()})
     
     const validation = schemaName.validate(req.body)
     if(validation.error) return res.sendStatus(422)
@@ -39,7 +39,7 @@ app.post('/participants', async (req, res) =>{
             from:name,
             to:"todos",
             text:"Entra na sala",
-            type:201,
+            type:"201",
             time:dayjs().format('hh:mm:ss')   
         })
         res.sendStatus(201)
