@@ -50,6 +50,13 @@ app.post('/participants', async (req, res) =>{
 })
 
 app.get('/participants', async (req, res) =>{
+    try{
+        const lisParticipants =  await db.collection('participants').find().toArray()
+        res.send(lisParticipants)
+    }catch(error){
+        res.sendStatus(400)
+    }
+    
     
 })
 const PORT = 5000
