@@ -40,7 +40,7 @@ app.post('/participants', async (req, res) =>{
             to:"todos",
             text:"Entra na sala",
             type:"201",
-            time:dayjs().format('hh:mm:ss')   
+            time:dayjs().format('hh:mm:ss').toString()  
         })
         res.sendStatus(201)
     }catch(err){
@@ -61,3 +61,12 @@ app.get('/participants', async (req, res) =>{
 })
 const PORT = 5000
 app.listen(PORT, () =>console.log(`Servidor rodando na porta ${PORT}`))
+
+
+/*const listParticipants =  await db.collection('participants').find().toArray()
+        //console.log(listParticipants)
+        const listaDosNomes = listParticipants.map(item =>{
+            return(item.name)
+            
+        })
+        res.send(listaDosNomes)*/
