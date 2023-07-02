@@ -72,8 +72,8 @@ app.post('/messages', async (req, res) =>{
     if(validation.error) return res.sendStatus(422)
 
     try{
-        const usuario = db.collection('participants').find({user})
-        if(!usuario) return res.sendStatus(422)
+        const usuario = db.collection('participants').find({ user })
+        if(!usuario || usuario !==user) return res.sendStatus(422)
         
         await db.collection('messages').insertOne({
             from: user,
@@ -90,9 +90,18 @@ app.post('/messages', async (req, res) =>{
     
 })
 
-/*app.get('/messages', async (req, res) => {
+app.get('/messages', async (req, res) => {
+    const {user} = req.headers
 
-})*/
+    try{
+        const listMessage = await db.collection('messages').find({$or: [{from:user}]}).toArray()
+        console.log(listMessage)
+        
+    }catch(error){
+        res.sendStatus(422)
+    }
+    res.sendStatus(201)
+})
 const PORT = 5000
 app.listen(PORT, () =>console.log(`Servidor rodando na porta ${PORT}`))
 
