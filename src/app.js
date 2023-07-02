@@ -92,24 +92,22 @@ app.post('/messages', async (req, res) =>{
 
 app.get('/messages', async (req, res) => {
     const {user} = req.headers
-
-    try{
-        const listMessage = await db.collection('messages').find({$or: [{to:'Todos'}, {from:user}, {to:user}]}).toArray()
-        res.sendStatus(listMessage)
-        
-    }catch(error){
-        res.sendStatus(422)
+    const limit = Number(req.query.limit)
+    //console.log(limit)
+    if(limit <= 0 || Number.isNaN(limit) ===true ){
+        return res.status(422).send('Algo deu errado')
     }
-    
+    try{
+        const listMessage = await db.collection('messages').find({$or: [{to:'todos'}, {to:user}, {from:user}]}).toArray()
+        if(limit >0){
+            
+            return res.send(listMessage.slice(-limit))
+        }
+       
+    }catch(error){
+        return res.sendStatus(422)
+    }
+    res.send(lisParticipants)
 })
 const PORT = 5000
 app.listen(PORT, () =>console.log(`Servidor rodando na porta ${PORT}`))
-
-
-/*const listParticipants =  await db.collection('participants').find().toArray()
-        //console.log(listParticipants)
-        const listaDosNomes = listParticipants.map(item =>{
-            return(item.name)
-            
-        })
-        res.send(listaDosNomes)*/
