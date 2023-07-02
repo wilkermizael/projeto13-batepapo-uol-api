@@ -37,7 +37,7 @@ app.post('/participants', async (req, res) =>{
         await db.collection('participants').insertOne({name , lastStatus:Date.now()})
         await db.collection('messages').insertOne({
             from:name,
-            to:"todos",
+            to:"Todos",
             text:"entra na sala...",
             type:"status",
             time:dayjs().format('hh:mm:ss').toString()  
@@ -73,7 +73,7 @@ app.post('/messages', async (req, res) =>{
 
     try{
         const usuario = db.collection('participants').find({ user })
-        if(!usuario || usuario !==user) return res.sendStatus(422)
+        if(!usuario) return res.sendStatus(422)
         
         await db.collection('messages').insertOne({
             from: user,
@@ -94,13 +94,13 @@ app.get('/messages', async (req, res) => {
     const {user} = req.headers
 
     try{
-        const listMessage = await db.collection('messages').find({$or: [{from:user}]}).toArray()
-        console.log(listMessage)
+        const listMessage = await db.collection('messages').find({$or: [{to:'Todos'}, {from:user}, {to:user}]}).toArray()
+        res.sendStatus(listMessage)
         
     }catch(error){
         res.sendStatus(422)
     }
-    res.sendStatus(201)
+    
 })
 const PORT = 5000
 app.listen(PORT, () =>console.log(`Servidor rodando na porta ${PORT}`))
