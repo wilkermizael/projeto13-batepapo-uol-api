@@ -38,7 +38,7 @@ app.post('/participants', async (req, res) =>{
         await db.collection('messages').insertOne({
             from:name,
             to:"todos",
-            text:"entra na sala",
+            text:"entra na sala...",
             type:"status",
             time:dayjs().format('hh:mm:ss').toString()  
         })
@@ -62,7 +62,6 @@ app.post('/messages', async (req, res) =>{
     const {to,text,type} = req.body
     const {user} = req.headers
     if(!user) return res.sendStatus(422)
-    if(!user) return res.sendStatus(422)
     const schemaParametro = Joi.object({
         to: Joi.string().required(),
         text: Joi.string().required(),
@@ -74,7 +73,7 @@ app.post('/messages', async (req, res) =>{
 
     try{
         const usuario = db.collection('participants').find({user})
-        if(!usuario || usuario !== user) return res.sendStatus(422)
+        if(!usuario) return res.sendStatus(422)
         
         await db.collection('messages').insertOne({
             from: user,
@@ -91,9 +90,9 @@ app.post('/messages', async (req, res) =>{
     
 })
 
-app.get('/messages', async (req, res) => {
+/*app.get('/messages', async (req, res) => {
 
-})
+})*/
 const PORT = 5000
 app.listen(PORT, () =>console.log(`Servidor rodando na porta ${PORT}`))
 
