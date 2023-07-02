@@ -103,11 +103,17 @@ app.get('/messages', async (req, res) => {
             
             return res.send(listMessage.slice(-limit))
         }
-       
+        res.send(lisParticipants)
+        
     }catch(error){
         return res.sendStatus(422)
     }
-    res.send(lisParticipants)
+    
+})
+
+app.post('/status', async (req, res) =>{
+    const {user} = req.headers
+    if(!user) return res.status(404)
 })
 const PORT = 5000
 app.listen(PORT, () =>console.log(`Servidor rodando na porta ${PORT}`))
