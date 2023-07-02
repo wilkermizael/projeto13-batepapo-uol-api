@@ -39,7 +39,7 @@ app.post('/participants', async (req, res) =>{
             from:name,
             to:"todos",
             text:"Entra na sala",
-            type:"201",
+            type:"status",
             time:dayjs().format('hh:mm:ss').toString()  
         })
         res.sendStatus(201)
@@ -56,7 +56,36 @@ app.get('/participants', async (req, res) =>{
     }catch(error){
         res.sendStatus(400)
     }
-    
+})
+
+app.post('/messages', async (req, res) =>{
+    const {to,text,type} = req.body
+    const {user} = req.headers
+    const schemaParametro = Joi.object({
+        to: Joi.string().required(),
+        text: Joi.string().required(),
+        type: Joi.string().valid('message', 'private_message').required()
+    })
+   
+    const validation = schemaParametro.validate(req.body)
+    if(validation.error) return res.sendStatus(422)
+
+    try{
+        const usuario = db.collection('participants').find({user})
+        if(!usuario) return res.sendStatus(422)
+        
+        await db.collection('messages').insertOne({
+            from: user,
+            to: to,
+            text: text,
+            type: type,
+            time: dayjs().toString()
+        })
+        res.sendStatus(201)
+    }catch (error){
+        console.log(error.message)
+        res.sendStatus(422)
+    }
     
 })
 const PORT = 5000
