@@ -45,7 +45,8 @@ app.post('/participants', async (req, res) =>{
         })
         res.sendStatus(201)
     }catch(err){
-        console.log(err.message)
+        
+        res.sendStatus(500)
     }
    
 })
@@ -54,16 +55,18 @@ app.get('/participants', async (req, res) =>{
     
     try{
         const listParticipants =  await db.collection('participants').find().toArray()
+        if(listParticipants.length === 0){
+            return res.send([])
+        }
         res.send(listParticipants)
     }catch(error){
-        res.sendStatus(400)
+        res.sendStatus(500)
     }
 })
 
 app.post('/messages', async (req, res) =>{
     const {to,text,type} = req.body;
     const user = req.headers.user;
-
     const schemaParametro = Joi.object({
         to: Joi.string().required(),
         text: Joi.string().required(),
@@ -75,9 +78,7 @@ app.post('/messages', async (req, res) =>{
     
     try{
        
-
-        const usuario = await db.collection('participants').findOne({name:user})
-        console.log(user)
+        const usuario = await db.collection('participants').find({name:user}).toArray()
         if(!usuario) return res.sendStatus(422)
         
         await db.collection('messages').insertOne({
@@ -89,8 +90,8 @@ app.post('/messages', async (req, res) =>{
         })
         res.sendStatus(201)
     }catch (error){
-        console.log(error.message)
-        res.sendStatus(422)
+        
+        res.sendStatus(500)
     }
     
 })
@@ -98,49 +99,55 @@ app.post('/messages', async (req, res) =>{
 app.get('/messages', async (req, res) => {
     const user = req.headers.user
     const limit = Number(req.query.limit)
-    const noLimit = req.query.limit
+    console.log(user)
     try{
-        if(typeof(noLimit) === 'string'){
-            return res.status(422)
-        }
-        if(limit <= 0 ){
+        if(limit!== undefined && (limit <= 0 || isNaN(limit) )){
             return res.status(422)
         }
         
         const listMessage = await db.collection('messages').find({$or: [{to:'Todos'}, {to:user}, {from:user}]}).toArray()
-        
-        if(noLimit === undefined){
-            return res.send(listMessage)
-        }
-        
-        if(limit >0){
-            
-            return res.send(listMessage.slice(-limit))
-        }
-        
+        res.send(listMessage)
 
     }catch(error){
-        return res.sendStatus(422)
+        res.sendStatus(500)
     }
     
 })
 
 app.post('/status', async (req, res) =>{
     const user = req.headers.user
-    const status = 'status'
     if(!user) return res.status(404)
     try{
         const usuario = await db.collection('participants').findOne({name:user})
-        if(usuario) return res.status(404)
+        if(!usuario) return res.status(404)
+
+        const changeStatus = await db.collection('participants').updateOne({name:user} , {$set: {lastStatus:Date.now()}})
+        res.sendStatus(200)
     }catch{
-        res.status(404)
+        res.sendStatus(500)
     }
     
-    res.send(200)
+   
 })
-function deletando(rota){
-    console.log(rota)
-}
+setInterval((async ()=>{
+    try{
+        const participantes = await db.collection('participants').find({lastStatus:{$lte:Date.now() - 10000}}).toArray()
+        participantes.map( async (item) =>{
+            await db.collection('messages').insertOne(
+                {
+                from: item.name,
+                to: 'Todos',
+                text: 'sai da sala...',
+                type: 'status',
+                time: dayjs().format('hh:mm:ss').toString()  
+            })
+            await db.collection('participants').deleteOne({name:item.name})
+        }) 
+    }catch{
+        res.sendStatus(500)
+    }
+}),15000)
+
 const PORT = 5000
 app.listen(PORT, () =>console.log(`Servidor rodando na porta ${PORT}`))
 
