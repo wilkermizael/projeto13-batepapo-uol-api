@@ -65,20 +65,24 @@ app.get('/participants', async (req, res) =>{
 })
 
 app.post('/messages', async (req, res) =>{
-    const {to,text,type} = req.body;
-    const user = req.headers.user;
-    const schemaParametro = Joi.object({
-        to: Joi.string().required(),
-        text: Joi.string().required(),
-        type: Joi.string().valid('message', 'private_message').required()
-    })
    
-    const validation = schemaParametro.validate(req.body)
-    if(validation.error) return res.sendStatus(422)
+   
     
     try{
-       
-        const usuario = await db.collection('participants').find({name:user}).toArray()
+        const {to,text,type} = req.body;
+        const user = req.headers.user;
+        
+        const schemaParametro = Joi.object({
+            to: Joi.string().required(),
+            text: Joi.string().required(),
+            type: Joi.string().valid('message', 'private_message').required()
+        })
+
+        const validation = schemaParametro.validate(req.body)
+        if(validation.error) return res.sendStatus(422)
+        if(!user) return res.sendStatus(422)
+
+        const usuario = await db.collection('participants').find({name:user})
         if(!usuario) return res.sendStatus(422)
         
         await db.collection('messages').insertOne({
@@ -98,15 +102,22 @@ app.post('/messages', async (req, res) =>{
 
 app.get('/messages', async (req, res) => {
     const user = req.headers.user
-    const limit = Number(req.query.limit)
-    console.log(user)
+    const limit = req.query.limit
+    console.log(limit)
     try{
         if(limit!== undefined && (limit <= 0 || isNaN(limit) )){
-            return res.status(422)
+            return res.sendStatus(422)
         }
-        
         const listMessage = await db.collection('messages').find({$or: [{to:'Todos'}, {to:user}, {from:user}]}).toArray()
-        res.send(listMessage)
+        let messages;
+        if(limit){
+            messages = await db.collection('messages').find(listMessage).sort({_id:1}).limit(parseInt(limit)).toArray()
+            
+        }else{
+            messages= await db.collection('messages').find(listMessage).sort({_id:1}).toArray()
+        }
+        res.send(messages)
+        
 
     }catch(error){
         res.sendStatus(500)
@@ -116,10 +127,10 @@ app.get('/messages', async (req, res) => {
 
 app.post('/status', async (req, res) =>{
     const user = req.headers.user
-    if(!user) return res.status(404)
+    if(!user) return res.sendStatus(404)
     try{
         const usuario = await db.collection('participants').findOne({name:user})
-        if(!usuario) return res.status(404)
+        if(!usuario) return res.sendStatus(404)
 
         const changeStatus = await db.collection('participants').updateOne({name:user} , {$set: {lastStatus:Date.now()}})
         res.sendStatus(200)
