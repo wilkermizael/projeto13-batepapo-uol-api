@@ -61,19 +61,20 @@ app.get('/participants', async (req, res) =>{
 })
 
 app.post('/messages', async (req, res) =>{
+    const {to,text,type} = req.body;
+    const user = req.headers.user;
+
+    const schemaParametro = Joi.object({
+        to: Joi.string().required(),
+        text: Joi.string().required(),
+        type: Joi.string().valid('message', 'private_message').required()
+    })
+   
+    const validation = schemaParametro.validate(req.body)
+    if(validation.error) return res.sendStatus(422)
     
     try{
-        const {to,text,type} = req.body;
-        const user = req.headers.user;
-
-        const schemaParametro = Joi.object({
-            to: Joi.string().required(),
-            text: Joi.string().required(),
-            type: Joi.string().valid('message', 'private_message').required()
-        })
        
-        const validation = schemaParametro.validate(req.body)
-        if(validation.error) return res.sendStatus(422)
 
         const usuario = await db.collection('participants').findOne({name:user})
         console.log(user)
@@ -124,20 +125,24 @@ app.get('/messages', async (req, res) => {
     
 })
 
-
+app.post('/status', async (req, res) =>{
+    const user = req.headers.user
+    const status = 'status'
+    if(!user) return res.status(404)
+    try{
+        const usuario = await db.collection('participants').findOne({name:user})
+        if(usuario) return res.status(404)
+    }catch{
+        res.status(404)
+    }
+    
+    res.send(200)
+})
+function deletando(rota){
+    console.log(rota)
+}
 const PORT = 5000
 app.listen(PORT, () =>console.log(`Servidor rodando na porta ${PORT}`))
 
 
 
-/*app.post('/status', async (req, res) =>{
-    const {user} = req.headers
-    const status = 'status'
-    if(!user) return res.status(404)
-
-    setInterval(deletando(status),1000)
-    res.send(200)
-})
-function deletando(rota){
-    console.log(rota)
-}*/
