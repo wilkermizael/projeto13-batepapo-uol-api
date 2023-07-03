@@ -4,6 +4,7 @@ import {MongoClient} from "mongodb"
 import Joi from "joi"
 import dotenv from "dotenv"
 import dayjs from "dayjs"
+
 //Criação do app
 const app = express()
 
@@ -50,29 +51,32 @@ app.post('/participants', async (req, res) =>{
 })
 
 app.get('/participants', async (req, res) =>{
+    
     try{
-        const lisParticipants =  await db.collection('participants').find().toArray()
-        res.send(lisParticipants)
+        const listParticipants =  await db.collection('participants').find().toArray()
+        res.send(listParticipants)
     }catch(error){
         res.sendStatus(400)
     }
 })
 
 app.post('/messages', async (req, res) =>{
-    const {to,text,type} = req.body
-    const {user} = req.headers
-    if(!user) return res.sendStatus(422)
-    const schemaParametro = Joi.object({
-        to: Joi.string().required(),
-        text: Joi.string().required(),
-        type: Joi.string().valid('message', 'private_message').required()
-    })
-   
-    const validation = schemaParametro.validate(req.body)
-    if(validation.error) return res.sendStatus(422)
-
+    
     try{
-        const usuario = db.collection('participants').find({ user })
+        const {to,text,type} = req.body;
+        const user = req.headers.user;
+
+        const schemaParametro = Joi.object({
+            to: Joi.string().required(),
+            text: Joi.string().required(),
+            type: Joi.string().valid('message', 'private_message').required()
+        })
+       
+        const validation = schemaParametro.validate(req.body)
+        if(validation.error) return res.sendStatus(422)
+
+        const usuario = await db.collection('participants').findOne({name:user})
+        console.log(user)
         if(!usuario) return res.sendStatus(422)
         
         await db.collection('messages').insertOne({
@@ -93,27 +97,45 @@ app.post('/messages', async (req, res) =>{
 app.get('/messages', async (req, res) => {
     const {user} = req.headers
     const limit = Number(req.query.limit)
-    //console.log(limit)
-    if(limit <= 0 || Number.isNaN(limit) ===true ){
-        return res.status(422).send('Algo deu errado')
-    }
+    const noLimit = req.query.limit
     try{
-        const listMessage = await db.collection('messages').find({$or: [{to:'todos'}, {to:user}, {from:user}]}).toArray()
+        
+        if(limit <= 0 ){
+            return res.status(422).send('Algo deu errado')
+        }
+        
+        const listMessage = await db.collection('messages').find({$or: [{to:'Todos'}, {to:user}, {from:user}]}).toArray()
+        
+        if(noLimit === undefined){
+            return res.send(listMessage)
+        }
+        
         if(limit >0){
             
             return res.send(listMessage.slice(-limit))
         }
-        res.send(lisParticipants)
         
+
     }catch(error){
         return res.sendStatus(422)
     }
     
 })
 
-app.post('/status', async (req, res) =>{
-    const {user} = req.headers
-    if(!user) return res.status(404)
-})
+
 const PORT = 5000
 app.listen(PORT, () =>console.log(`Servidor rodando na porta ${PORT}`))
+
+
+
+/*app.post('/status', async (req, res) =>{
+    const {user} = req.headers
+    const status = 'status'
+    if(!user) return res.status(404)
+
+    setInterval(deletando(status),1000)
+    res.send(200)
+})
+function deletando(rota){
+    console.log(rota)
+}*/
