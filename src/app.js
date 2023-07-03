@@ -84,7 +84,7 @@ app.post('/messages', async (req, res) =>{
             to: to,
             text: text,
             type: type,
-            time: dayjs().toString()
+            time: dayjs().format('HH:mm:ss')
         })
         res.sendStatus(201)
     }catch (error){
@@ -95,13 +95,15 @@ app.post('/messages', async (req, res) =>{
 })
 
 app.get('/messages', async (req, res) => {
-    const {user} = req.headers
+    const user = req.headers.user
     const limit = Number(req.query.limit)
     const noLimit = req.query.limit
     try{
-        
+        if(typeof(noLimit) === 'string'){
+            return res.status(422)
+        }
         if(limit <= 0 ){
-            return res.status(422).send('Algo deu errado')
+            return res.status(422)
         }
         
         const listMessage = await db.collection('messages').find({$or: [{to:'Todos'}, {to:user}, {from:user}]}).toArray()
