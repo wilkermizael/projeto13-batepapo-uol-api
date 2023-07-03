@@ -19,7 +19,7 @@ const mongoClient = new MongoClient(process.env.DATABASE_URL)
 try{
     await mongoClient.connect()
 }catch(err){
-    console.log(err.message)
+    console.log(err.message, "esse")
 }
 const db = mongoClient.db()
 
@@ -66,21 +66,23 @@ app.get('/participants', async (req, res) =>{
 
 app.post('/messages', async (req, res) =>{
    
-   
+    const {to,text,type} = req.body;
+    const user = req.headers.user;
+    if(!user) return res.sendStatus(422)
+
+
+    const schemaParametro = Joi.object({
+        to: Joi.string().required(),
+        text: Joi.string().required(),
+        type: Joi.string().valid('message', 'private_message').required()
+    })
+
+    const validation = schemaParametro.validate(req.body)
+    if(validation.error) return res.sendStatus(422)
+    if(!user) return res.sendStatus(422)
     
     try{
-        const {to,text,type} = req.body;
-        const user = req.headers.user;
         
-        const schemaParametro = Joi.object({
-            to: Joi.string().required(),
-            text: Joi.string().required(),
-            type: Joi.string().valid('message', 'private_message').required()
-        })
-
-        const validation = schemaParametro.validate(req.body)
-        if(validation.error) return res.sendStatus(422)
-        if(!user) return res.sendStatus(422)
 
         const usuario = await db.collection('participants').find({name:user})
         if(!usuario) return res.sendStatus(422)
@@ -101,21 +103,21 @@ app.post('/messages', async (req, res) =>{
 })
 
 app.get('/messages', async (req, res) => {
-    const user = req.headers.user
-    const limit = req.query.limit
-    console.log(limit)
+    
     try{
-        if(limit!== undefined && (limit <= 0 || isNaN(limit) )){
-            return res.sendStatus(422)
-        }
+        const user = req.headers.user
+        const limit = req.query.limit
+        
         const listMessage = await db.collection('messages').find({$or: [{to:'Todos'}, {to:user}, {from:user}]}).toArray()
         let messages;
-        if(limit){
-            messages = await db.collection('messages').find(listMessage).sort({_id:1}).limit(parseInt(limit)).toArray()
-            
-        }else{
-            messages= await db.collection('messages').find(listMessage).sort({_id:1}).toArray()
+        if(limit === undefined)return res.send(listMessage)
+        if(limit > 0){
+            messages = listMessage.slice(-limit)
         }
+        if(limit <= 0 || isNaN(limit)){
+            return res.sendStatus(422)
+        }
+        
         res.send(messages)
         
 
